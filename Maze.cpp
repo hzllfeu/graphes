@@ -56,31 +56,7 @@ Maze::Maze(const std::string& levelPath)
     {
         throw std::out_of_range("Width or height too large !");
     }
-}
-
-void Maze::draw(GraphicAllegro5& g) const
-{
-    for (unsigned int i=0; i<this->m_field.size(); ++i)
-    {
-        for (unsigned int j=0; j<this->m_field[i].size(); ++j)
-        {
-            const auto s = this->m_field[i][j];
-            if (s.sprite == SpriteType::WALL) {
-                g.drawT(g.getSprite(BITMAP_WALL), j, i);
-            }
-            else if (s.sprite == SpriteType::BOX_PLACED) {
-                g.drawT(g.getSprite(BITMAP_BOX_PLACED), j, i);
-            }
-            else if (s.sprite == SpriteType::BOX) {
-                g.drawT(g.getSprite(BITMAP_BOX), j, i);
-            }
-            else if (s.sprite == SpriteType::GOAL) {
-                g.drawT(g.getSprite(BITMAP_GOAL), j, i);
-            }
-        }
-    }
-
-    g.drawT(g.getSpritePlayer(this->m_playerDirection), this->m_playerPosition.second, this->m_playerPosition.first);
+    this->computeStaticDeadlocks();
 }
 
 bool Maze::isWall(const std::pair<int, int>& position) const
@@ -260,4 +236,55 @@ std::vector<std::pair<int, int>> Maze::getGoals() const
         }
     }
     return goals;
+}
+
+void Maze::computeStaticDeadlocks() {
+    // Initialise la matrice à "false" partout [cite: 37]
+    m_deadlocks.assign(m_lig, std::vector<bool>(m_col, false));
+
+    for (unsigned int i = 0; i < m_lig; ++i) {
+        for (unsigned int j = 0; j < m_col; ++j) {
+            // Un mur ou un objectif ne peut pas être une case morte [cite: 39, 40]
+            if (isWall({i, j}) || isGoal({i, j})) continue;
+
+            // Vérification des murs adjacents (Haut, Bas, Gauche, Droite) [cite: 47, 109]
+            bool wT = isWall({i - 1, j});
+            bool wB = isWall({i + 1, j});
+            bool wL = isWall({i, j - 1});
+            bool wR = isWall({i, j + 1});
+
+            // Si la case est un coin (deux murs perpendiculaires) [cite: 120]
+            if ((wT && wL) || (wT && wR) || (wB && wL) || (wB && wR)) {
+                m_deadlocks[i][j] = true;
+            }
+        }
+    }
+}
+
+void Maze::draw(GraphicAllegro5& g) const {
+    for (unsigned int i = 0; i < this->m_field.size(); ++i) {
+        for (unsigned int j = 0; j < this->m_field[i].size(); ++j) {
+            // 1. D'abord, on dessine le sol ou les deadlocks (en ROUGE) [cite: 121]
+            if (m_deadlocks[i][j]) {
+                g.drawRect(j, i, j + 1, i + 1, COLOR_RED, 1, true);
+            }
+
+            // 2. Ensuite, on dessine les sprites par-dessus [cite: 39, 81]
+            const auto s = this->m_field[i][j];
+            if (s.sprite == SpriteType::WALL) {
+                g.drawT(g.getSprite(BITMAP_WALL), j, i);
+            }
+            else if (s.sprite == SpriteType::BOX_PLACED) {
+                g.drawT(g.getSprite(BITMAP_BOX_PLACED), j, i);
+            }
+            else if (s.sprite == SpriteType::BOX) {
+                g.drawT(g.getSprite(BITMAP_BOX), j, i);
+            }
+            else if (s.sprite == SpriteType::GOAL) {
+                g.drawT(g.getSprite(BITMAP_GOAL), j, i);
+            }
+        }
+    }
+    // 3. Enfin le joueur [cite: 39]
+    g.drawT(g.getSpritePlayer(this->m_playerDirection), this->m_playerPosition.second, this->m_playerPosition.first);
 }

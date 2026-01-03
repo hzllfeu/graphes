@@ -44,8 +44,10 @@ class Maze
     private:
         std::vector<std::vector<Square>> m_field;
         std::pair<int, int> m_playerPosition;
+        std::vector<std::vector<bool>> m_deadlocks;
         unsigned int m_lig = 0, m_col = 0; // size of field
         char m_playerDirection = RIGHT;
+
 
     public:
 
@@ -74,6 +76,11 @@ class Maze
         unsigned int getNbCols() const { return this->m_col; }
 
         const std::pair<int, int>& getPlayerPosition() const { return this->m_playerPosition; }
+
+        void computeStaticDeadlocks();
+        bool isDeadlock(const std::pair<int, int>& pos) const {
+            return m_deadlocks[pos.first][pos.second];
+        }
 };
 
 #endif // MAZE_H_INCLUDED

@@ -1,0 +1,51 @@
+# depslib dependency file v1.0
+1767449507 source:c:\users\noahn\desktop\graph\projet\graphes\graphicallegro5.cpp
+	"GraphicAllegro5.h"
+	<iostream>
+
+1767449507 c:\users\noahn\desktop\graph\projet\graphes\graphicallegro5.h
+	<allegro5/allegro5.h>
+	<allegro5/allegro_image.h>
+	<allegro5/allegro_primitives.h>
+	<allegro5/allegro_font.h>
+	<string>
+	<iostream>
+	<vector>
+
+1767471457 source:c:\users\noahn\desktop\graph\projet\graphes\main.cpp
+	"Maze.h"
+	"GraphicAllegro5.h"
+	"Solver.h"
+
+1767469277 c:\users\noahn\desktop\graph\projet\graphes\maze.h
+	<string>
+	<vector>
+	"GraphicAllegro5.h"
+
+1767470410 c:\users\noahn\desktop\graph\projet\graphes\solver.h
+	"Maze.h"
+	"Node.h"
+	<vector>
+	<set>
+	<string>
+	<queue>
+	<stack>
+	<iostream>
+
+1767449507 c:\users\noahn\desktop\graph\projet\graphes\node.h
+	<vector>
+	<set>
+	<string>
+	<utility>
+
+1767471365 source:c:\users\noahn\desktop\graph\projet\graphes\maze.cpp
+	"Maze.h"
+	"GraphicAllegro5.h"
+	<fstream>
+	<exception>
+
+1767470432 source:c:\users\noahn\desktop\graph\projet\graphes\solver.cpp
+	"Solver.h"
+	<algorithm>
+	<cmath>
+
