@@ -71,7 +71,7 @@ std::vector<Node> Solver::expand(const Node& current) const {
 
             if(current.boxes.count(newBoxPos)) continue;
 
-            if(m_staticDeadlocks[newBoxPos.first][newBoxPos.second]) continue;
+            //if(m_staticDeadlocks[newBoxPos.first][newBoxPos.second]) continue;
 
             isPush = true;
 
