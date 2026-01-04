@@ -92,6 +92,12 @@ int main()
             runSolver("A*", [&](){ Solver s(m); return s.solveAStar(); }, m, graphic);
         }
 
+        if (graphic.keyGet(ALLEGRO_KEY_G)) // GREEDY
+{       {
+            runSolver("Greedy", [&](){ Solver s(m); return s.solveBestFirst(); }, m, graphic);
+        }
+}
+
         if (graphic.keyGet(ALLEGRO_KEY_R))
         {
             // Reload the level

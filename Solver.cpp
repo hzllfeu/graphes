@@ -71,7 +71,7 @@ std::vector<Node> Solver::expand(const Node& current) const {
 
             if(current.boxes.count(newBoxPos)) continue;
 
-            //if(m_staticDeadlocks[newBoxPos.first][newBoxPos.second]) continue;
+            if(m_staticDeadlocks[newBoxPos.first][newBoxPos.second]) continue;
 
             isPush = true;
 
@@ -258,8 +258,6 @@ std::vector<char> Solver::solveBruteForce() {
     startNode.boxes = m_startBoxes;
     std::vector<char> solution;
 
-    // On limite la profondeur à 15 ou 20 car sans 'visited',
-    // l'algorithme s'arrêtera vite par manque de puissance[cite: 28, 117].
     int maxDepth = 15;
     std::cout << "Starting Brute Force (max depth: " << maxDepth << ")..." << std::endl;
 
@@ -301,4 +299,46 @@ bool Solver::bruteForceRecursive(Node& current, int depth, int maxDepth, std::ve
     }
 
     return false;
+}
+
+std::vector<char> Solver::solveBestFirst() {
+    // Utilisation du comparateur basé uniquement sur h(n)
+    std::priority_queue<Node, std::vector<Node>, GreedyNodeComparator> openSet;
+    std::set<Node> visited;
+
+    Node startNode;
+    startNode.playerPos = m_startPlayer;
+    startNode.boxes = m_startBoxes;
+    startNode.heuristic = calculateHeuristic(startNode);
+
+    openSet.push(startNode);
+    visited.insert(startNode);
+
+    int nodesExplored = 0;
+    while(!openSet.empty()) {
+        Node current = openSet.top();
+        openSet.pop();
+        nodesExplored++;
+
+        // Vérification de la victoire
+        bool allOnGoal = true;
+        for(const auto& box : current.boxes) {
+            if(!isGoal(box)) { allOnGoal = false; break; }
+        }
+        if(allOnGoal) {
+            std::cout << "Greedy Found solution! Length: " << current.path.size()
+                      << " Nodes explored: " << nodesExplored << std::endl;
+            return std::vector<char>(current.path.begin(), current.path.end());
+        }
+
+        for(auto& next : expand(current)) {
+            if(visited.find(next) == visited.end()) {
+                next.heuristic = calculateHeuristic(next);
+                visited.insert(next);
+                openSet.push(next);
+            }
+        }
+    }
+    std::cout << "Greedy: No solution found." << std::endl;
+    return {};
 }

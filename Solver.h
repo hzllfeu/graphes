@@ -21,6 +21,7 @@ public:
 
     // Level 2: Heuristic Algorithms
     std::vector<char> solveAStar();
+    std::vector<char> solveBestFirst();
 
 private:
     // Static map data (constant throughout the search)

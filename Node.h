@@ -35,4 +35,11 @@ struct NodeComparator {
     }
 };
 
+struct GreedyNodeComparator {
+    bool operator()(const Node& a, const Node& b) const {
+        // Pour le Greedy, on ne regarde que l'heuristique h(n)
+        return a.heuristic > b.heuristic;
+    }
+};
+
 #endif // NODE_H
