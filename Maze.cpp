@@ -269,7 +269,7 @@ void Maze::draw(GraphicAllegro5& g) const {
                 g.drawRect(j, i, j + 1, i + 1, COLOR_RED, 1, true);
             }
 
-            // 2. Ensuite, on dessine les sprites par-dessus [cite: 39, 81]
+            // 2. Ensuite, on dessine les sprites par-dessus
             const auto s = this->m_field[i][j];
             if (s.sprite == SpriteType::WALL) {
                 g.drawT(g.getSprite(BITMAP_WALL), j, i);
@@ -285,6 +285,6 @@ void Maze::draw(GraphicAllegro5& g) const {
             }
         }
     }
-    // 3. Enfin le joueur [cite: 39]
+    // 3. Enfin le joueur
     g.drawT(g.getSpritePlayer(this->m_playerDirection), this->m_playerPosition.second, this->m_playerPosition.first);
 }

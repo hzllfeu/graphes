@@ -28,7 +28,7 @@ Solver::Solver(const Maze& maze) {
     m_startBoxes.insert(boxesVec.begin(), boxesVec.end());
 }
 
-// Optimized isWall using the vector (can be improved)
+// Optimized isWall using the vector
 bool Solver::isWall(const std::pair<int, int>& pos) const {
     for(const auto& w : m_walls) {
         if(w == pos) return true;
@@ -271,22 +271,21 @@ std::vector<char> Solver::solveBruteForce() {
 }
 
 bool Solver::bruteForceRecursive(Node& current, int depth, int maxDepth, std::vector<char>& solution) {
-    // 1. Vérification de la victoire [cite: 49, 97]
+    // 1. Vérification de la victoire
     bool allOnGoal = true;
     for(const auto& box : current.boxes) {
         if(!isGoal(box)) { allOnGoal = false; break; }
     }
     if(allOnGoal) return true;
 
-    // 2. Limite de profondeur (évite de boucler à l'infini) [cite: 102]
+    // 2. Limite de profondeur (évite de boucler à l'infini)
     if (depth >= maxDepth) return false;
 
-    // 3. Expansion des successeurs [cite: 98, 99]
-    // L'ordre HAUT, BAS, GAUCHE, DROITE est respecté via expand [cite: 109, 111]
+    // 3. Expansion des successeurs
     std::vector<Node> successors = expand(current);
 
     for (const auto& next : successors) {
-        // Ajouter le mouvement à la solution [cite: 117]
+        // Ajouter le mouvement à la solution
         solution.push_back(next.path.back());
 
         Node temp = next; // Copie de l'état actuel
