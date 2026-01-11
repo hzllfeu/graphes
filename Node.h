@@ -5,11 +5,23 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <functional> // For std::hash
+
+// Custom hash for std::pair
+struct pair_hash {
+    template <class T1, class T2>
+    std::size_t operator()(const std::pair<T1, T2>& p) const {
+        auto h1 = std::hash<T1>{}(p.first);
+        auto h2 = std::hash<T2>{}(p.second);
+        // Simple bit mixing
+        return h1 ^ (h2 << 1);
+    }
+};
 
 struct Node {
     std::pair<int, int> playerPos;
-    std::set<std::pair<int, int>> boxes; // Using set for automatic sorting and easy comparison
-    std::string path; // Stores the sequence of moves (0: TOP, 1: BOTTOM, 2: LEFT, 3: RIGHT)
+    std::set<std::pair<int, int>> boxes; // Using set for canonical state
+    std::string path; 
 
     // For A*
     int cost = 0; // g(n)
@@ -17,7 +29,7 @@ struct Node {
 
     int f() const { return cost + heuristic; }
 
-    // Operator for std::set (visited states)
+    // Operator for std::set (visited states) and sorting
     bool operator<(const Node& other) const {
         if (playerPos != other.playerPos)
             return playerPos < other.playerPos;
@@ -26,6 +38,24 @@ struct Node {
 
     bool operator==(const Node& other) const {
         return playerPos == other.playerPos && boxes == other.boxes;
+    }
+};
+
+struct NodeHash {
+    std::size_t operator()(const Node& n) const {
+        std::size_t seed = 0;
+        
+        // Hash player pos
+        auto hPlayer = pair_hash{}(n.playerPos);
+        seed ^= hPlayer + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+        // Hash boxes
+        // Since std::set is ordered, we can just iterate and combine hashes
+        for(const auto& box : n.boxes) {
+            auto hBox = pair_hash{}(box);
+            seed ^= hBox + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+        return seed;
     }
 };
 

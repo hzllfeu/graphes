@@ -1,6 +1,8 @@
 #include "Solver.h"
 #include <algorithm>
 #include <cmath>
+#include <unordered_set>
+#include <chrono>
 
 Solver::Solver(const Maze& maze) {
     m_maxRow = maze.getNbLines();
@@ -98,8 +100,9 @@ std::vector<Node> Solver::expand(const Node& current) const {
 }
 
 std::vector<char> Solver::solveBFS() {
+    auto startTimer = std::chrono::high_resolution_clock::now();
     std::queue<Node> openSet;
-    std::set<Node> visited;
+    std::unordered_set<Node, NodeHash> visited;
 
     Node startNode;
     startNode.playerPos = m_startPlayer;
@@ -124,8 +127,11 @@ std::vector<char> Solver::solveBFS() {
             }
         }
         if(allOnGoal) {
+            auto endTimer = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed = endTimer - startTimer;
             std::cout << "BFS Found solution! Length: " << current.path.size()
-                      << " Nodes explored: " << nodesExplored << std::endl;
+                      << " Nodes explored: " << nodesExplored 
+                      << " Time: " << elapsed.count() << "s" << std::endl;
             std::vector<char> result(current.path.begin(), current.path.end());
             return result;
         }
@@ -139,13 +145,16 @@ std::vector<char> Solver::solveBFS() {
         }
     }
 
-    std::cout << "BFS: No solution found." << std::endl;
+    auto endTimer = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = endTimer - startTimer;
+    std::cout << "BFS: No solution found. Time: " << elapsed.count() << "s" << std::endl;
     return {};
 }
 
 std::vector<char> Solver::solveDFS() {
+    auto startTimer = std::chrono::high_resolution_clock::now();
     std::stack<Node> openSet;
-    std::set<Node> visited;
+    std::unordered_set<Node, NodeHash> visited;
 
     Node startNode;
     startNode.playerPos = m_startPlayer;
@@ -170,8 +179,11 @@ std::vector<char> Solver::solveDFS() {
             }
         }
         if(allOnGoal) {
+            auto endTimer = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed = endTimer - startTimer;
             std::cout << "DFS Found solution! Length: " << current.path.size()
-                      << " Nodes explored: " << nodesExplored << std::endl;
+                      << " Nodes explored: " << nodesExplored 
+                      << " Time: " << elapsed.count() << "s" << std::endl;
             std::vector<char> result(current.path.begin(), current.path.end());
             return result;
         }
@@ -185,6 +197,9 @@ std::vector<char> Solver::solveDFS() {
             }
         }
     }
+    auto endTimer = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = endTimer - startTimer;
+    std::cout << "DFS: No solution found. Time: " << elapsed.count() << "s" << std::endl;
     return {};
 }
 
@@ -202,8 +217,9 @@ int Solver::calculateHeuristic(const Node& node) const {
 }
 
 std::vector<char> Solver::solveAStar() {
+    auto startTimer = std::chrono::high_resolution_clock::now();
     std::priority_queue<Node, std::vector<Node>, NodeComparator> openSet;
-    std::set<Node> visited;
+    std::unordered_set<Node, NodeHash> visited;
 
     Node startNode;
     startNode.playerPos = m_startPlayer;
@@ -233,8 +249,11 @@ std::vector<char> Solver::solveAStar() {
             }
         }
         if(allOnGoal) {
+            auto endTimer = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed = endTimer - startTimer;
             std::cout << "A* Found solution! Length: " << current.path.size()
-                      << " Nodes explored: " << nodesExplored << std::endl;
+                      << " Nodes explored: " << nodesExplored 
+                      << " Time: " << elapsed.count() << "s" << std::endl;
             std::vector<char> result(current.path.begin(), current.path.end());
             return result;
         }
@@ -248,11 +267,14 @@ std::vector<char> Solver::solveAStar() {
             }
         }
     }
-     std::cout << "A*: No solution found." << std::endl;
+     auto endTimer = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = endTimer - startTimer;
+    std::cout << "A*: No solution found. Time: " << elapsed.count() << "s" << std::endl;
     return {};
 }
 
 std::vector<char> Solver::solveBruteForce() {
+    auto startTimer = std::chrono::high_resolution_clock::now();
     Node startNode;
     startNode.playerPos = m_startPlayer;
     startNode.boxes = m_startBoxes;
@@ -262,38 +284,42 @@ std::vector<char> Solver::solveBruteForce() {
     std::cout << "Starting Brute Force (max depth: " << maxDepth << ")..." << std::endl;
 
     if (bruteForceRecursive(startNode, 0, maxDepth, solution)) {
-        std::cout << "Brute Force: Solution found!" << std::endl;
+        auto endTimer = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = endTimer - startTimer;
+        std::cout << "Brute Force: Solution found! Time: " << elapsed.count() << "s" << std::endl;
         return solution;
     }
 
-    std::cout << "Brute Force: No solution found." << std::endl;
+    auto endTimer = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = endTimer - startTimer;
+    std::cout << "Brute Force: No solution found. Time: " << elapsed.count() << "s" << std::endl;
     return {};
 }
 
 bool Solver::bruteForceRecursive(Node& current, int depth, int maxDepth, std::vector<char>& solution) {
-    // 1. Vérification de la victoire
+    // 1. Verification de la victoire
     bool allOnGoal = true;
     for(const auto& box : current.boxes) {
         if(!isGoal(box)) { allOnGoal = false; break; }
     }
     if(allOnGoal) return true;
 
-    // 2. Limite de profondeur (évite de boucler à l'infini)
+    // 2. Limite de profondeur (evite de boucler a l'infini)
     if (depth >= maxDepth) return false;
 
     // 3. Expansion des successeurs
     std::vector<Node> successors = expand(current);
 
     for (const auto& next : successors) {
-        // Ajouter le mouvement à la solution
+        // Ajouter le mouvement a la solution
         solution.push_back(next.path.back());
 
-        Node temp = next; // Copie de l'état actuel
+        Node temp = next; // Copie de l'etat actuel
         if (bruteForceRecursive(temp, depth + 1, maxDepth, solution)) {
             return true;
         }
 
-        // Backtracking : on retire le mouvement si ce chemin ne mène à rien
+        // Backtracking : on retire le mouvement si ce chemin ne mene a rien
         solution.pop_back();
     }
 
@@ -301,9 +327,10 @@ bool Solver::bruteForceRecursive(Node& current, int depth, int maxDepth, std::ve
 }
 
 std::vector<char> Solver::solveBestFirst() {
-    // Utilisation du comparateur basé uniquement sur h(n)
+    auto startTimer = std::chrono::high_resolution_clock::now();
+    // Utilisation du comparateur base uniquement sur h(n)
     std::priority_queue<Node, std::vector<Node>, GreedyNodeComparator> openSet;
-    std::set<Node> visited;
+    std::unordered_set<Node, NodeHash> visited;
 
     Node startNode;
     startNode.playerPos = m_startPlayer;
@@ -319,14 +346,17 @@ std::vector<char> Solver::solveBestFirst() {
         openSet.pop();
         nodesExplored++;
 
-        // Vérification de la victoire
+        // Verification de la victoire
         bool allOnGoal = true;
         for(const auto& box : current.boxes) {
             if(!isGoal(box)) { allOnGoal = false; break; }
         }
         if(allOnGoal) {
+            auto endTimer = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed = endTimer - startTimer;
             std::cout << "Greedy Found solution! Length: " << current.path.size()
-                      << " Nodes explored: " << nodesExplored << std::endl;
+                      << " Nodes explored: " << nodesExplored 
+                      << " Time: " << elapsed.count() << "s" << std::endl;
             return std::vector<char>(current.path.begin(), current.path.end());
         }
 
@@ -338,6 +368,8 @@ std::vector<char> Solver::solveBestFirst() {
             }
         }
     }
-    std::cout << "Greedy: No solution found." << std::endl;
+    auto endTimer = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = endTimer - startTimer;
+    std::cout << "Greedy: No solution found. Time: " << elapsed.count() << "s" << std::endl;
     return {};
 }
