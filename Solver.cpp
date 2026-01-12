@@ -130,7 +130,7 @@ std::vector<char> Solver::solveBFS() {
             auto endTimer = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = endTimer - startTimer;
             std::cout << "BFS Found solution! Length: " << current.path.size()
-                      << " Nodes explored: " << nodesExplored 
+                      << " Nodes explored: " << nodesExplored
                       << " Time: " << elapsed.count() << "s" << std::endl;
             std::vector<char> result(current.path.begin(), current.path.end());
             return result;
@@ -182,7 +182,7 @@ std::vector<char> Solver::solveDFS() {
             auto endTimer = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = endTimer - startTimer;
             std::cout << "DFS Found solution! Length: " << current.path.size()
-                      << " Nodes explored: " << nodesExplored 
+                      << " Nodes explored: " << nodesExplored
                       << " Time: " << elapsed.count() << "s" << std::endl;
             std::vector<char> result(current.path.begin(), current.path.end());
             return result;
@@ -252,7 +252,7 @@ std::vector<char> Solver::solveAStar() {
             auto endTimer = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = endTimer - startTimer;
             std::cout << "A* Found solution! Length: " << current.path.size()
-                      << " Nodes explored: " << nodesExplored 
+                      << " Nodes explored: " << nodesExplored
                       << " Time: " << elapsed.count() << "s" << std::endl;
             std::vector<char> result(current.path.begin(), current.path.end());
             return result;
@@ -355,7 +355,7 @@ std::vector<char> Solver::solveBestFirst() {
             auto endTimer = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = endTimer - startTimer;
             std::cout << "Greedy Found solution! Length: " << current.path.size()
-                      << " Nodes explored: " << nodesExplored 
+                      << " Nodes explored: " << nodesExplored
                       << " Time: " << elapsed.count() << "s" << std::endl;
             return std::vector<char>(current.path.begin(), current.path.end());
         }

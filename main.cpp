@@ -15,14 +15,7 @@ int currentIdx = 1; // On commence sur Easy1.txt
 
 void runSolver(const std::string& name, std::function<std::vector<char>()> solverFunc, Maze& m, GraphicAllegro5& g) {
     std::cout << "--- " << name << " ---" << std::endl;
-
-    auto start = std::chrono::high_resolution_clock::now();
     std::vector<char> solution = solverFunc(); // Appel de l'algorithme (BFS, DFS, etc.)
-    auto end = std::chrono::high_resolution_clock::now();
-
-    std::chrono::duration<double> elapsed = end - start;
-    std::cout << "Temps : " << elapsed.count() << " secondes" << std::endl;
-
     if (!solution.empty()) {
         m.playSolution(g, solution);
     } else {

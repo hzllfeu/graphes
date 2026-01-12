@@ -24,7 +24,7 @@
 	<vector>
 	"GraphicAllegro5.h"
 
-1767535879 c:\users\noahn\desktop\graph\projet\graphes\solver.h
+1768245208 c:\users\noahn\desktop\graph\projet\graphes\solver.h
 	"Maze.h"
 	"Node.h"
 	<vector>
@@ -34,13 +34,14 @@
 	<stack>
 	<iostream>
 
-1767535848 c:\users\noahn\desktop\graph\projet\graphes\node.h
+1768203384 c:\users\noahn\desktop\graph\projet\graphes\node.h
 	<vector>
 	<set>
 	<string>
 	<utility>
+	<functional>
 
-1767528525 source:c:\users\noahn\desktop\graph\projet\graphes\maze.cpp
+1767703476 source:c:\users\noahn\desktop\graph\projet\graphes\maze.cpp
 	"Maze.h"
 	"GraphicAllegro5.h"
 	<fstream>
