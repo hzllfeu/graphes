@@ -239,21 +239,21 @@ std::vector<std::pair<int, int>> Maze::getGoals() const
 }
 
 void Maze::computeStaticDeadlocks() {
-    // Initialise la matrice à "false" partout [cite: 37]
+    // Initialise la matrice à "false" partout
     m_deadlocks.assign(m_lig, std::vector<bool>(m_col, false));
 
     for (unsigned int i = 0; i < m_lig; ++i) {
         for (unsigned int j = 0; j < m_col; ++j) {
-            // Un mur ou un objectif ne peut pas être une case morte [cite: 39, 40]
+            // Un mur ou un objectif ne peut pas être une case morte
             if (isWall({i, j}) || isGoal({i, j})) continue;
 
-            // Vérification des murs adjacents (Haut, Bas, Gauche, Droite) [cite: 47, 109]
+            // Vérification des murs adjacents (Haut, Bas, Gauche, Droite)
             bool wT = isWall({i - 1, j});
             bool wB = isWall({i + 1, j});
             bool wL = isWall({i, j - 1});
             bool wR = isWall({i, j + 1});
 
-            // Si la case est un coin (deux murs perpendiculaires) [cite: 120]
+            // Si la case est un coin (deux murs perpendiculaires)
             if ((wT && wL) || (wT && wR) || (wB && wL) || (wB && wR)) {
                 m_deadlocks[i][j] = true;
             }
