@@ -5,70 +5,64 @@
 #include <set>
 #include <string>
 #include <utility>
-#include <functional> // For std::hash
+#include <functional>
 
-// Custom hash for std::pair
+
 struct pair_hash {
     template <class T1, class T2>
     std::size_t operator()(const std::pair<T1, T2>& p) const {
-        auto h1 = std::hash<T1>{}(p.first);
-        auto h2 = std::hash<T2>{}(p.second);
-        // Simple bit mixing
-        return h1 ^ (h2 << 1);
+        return std::hash<int>{}(p.first) ^ (std::hash<int>{}(p.second) << 1);
     }
 };
 
 struct Node {
     std::pair<int, int> playerPos;
-    std::set<std::pair<int, int>> boxes; // Using set for canonical state
-    std::string path; 
+    std::set<std::pair<int, int>> boxes; // On garde le set pour pas que ça bug
+    std::string path;
 
-    // For A*
-    int cost = 0; // g(n)
-    int heuristic = 0; // h(n)
+    // g(n) et h(n)
+    int cost = 0;
+    int heuristic = 0;
 
+    // calcul de f direct
     int f() const { return cost + heuristic; }
 
-    // Operator for std::set (visited states) and sorting
+    // Pour comparer deux nodes dans le set des vues
     bool operator<(const Node& other) const {
         if (playerPos != other.playerPos)
             return playerPos < other.playerPos;
         return boxes < other.boxes;
     }
 
+    // Pour tester l'égalité
     bool operator==(const Node& other) const {
         return playerPos == other.playerPos && boxes == other.boxes;
     }
 };
 
+// Hash
 struct NodeHash {
     std::size_t operator()(const Node& n) const {
-        std::size_t seed = 0;
-        
-        // Hash player pos
-        auto hPlayer = pair_hash{}(n.playerPos);
-        seed ^= hPlayer + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-
-        // Hash boxes
-        // Since std::set is ordered, we can just iterate and combine hashes
-        for(const auto& box : n.boxes) {
-            auto hBox = pair_hash{}(box);
-            seed ^= hBox + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        std::size_t h = 0;
+        // On combine le joueur et les boites
+        h ^= pair_hash{}(n.playerPos) + 0x9e3779b9;
+        for(auto const& b : n.boxes) {
+            h ^= pair_hash{}(b) + 0x9e3779b9;
         }
-        return seed;
+        return h;
     }
 };
 
+// Comparateur pour les priority queue
 struct NodeComparator {
     bool operator()(const Node& a, const Node& b) const {
-        return a.f() > b.f(); // Min-priority queue for A*
+        return a.f() > b.f(); // A* : le plus petit f en premier
     }
 };
 
 struct GreedyNodeComparator {
     bool operator()(const Node& a, const Node& b) const {
-        // Pour le Greedy, on ne regarde que l'heuristique h(n)
-        return a.heuristic > b.heuristic;
+        return a.heuristic > b.heuristic; // Greedy : on regarde que h
     }
 };
 

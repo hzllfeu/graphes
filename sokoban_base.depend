@@ -12,7 +12,7 @@
 	<iostream>
 	<vector>
 
-1767535960 source:c:\users\noahn\desktop\graph\projet\graphes\main.cpp
+1768247796 source:c:\users\noahn\desktop\graph\projet\graphes\main.cpp
 	"Maze.h"
 	"GraphicAllegro5.h"
 	"Solver.h"
@@ -24,7 +24,7 @@
 	<vector>
 	"GraphicAllegro5.h"
 
-1768245208 c:\users\noahn\desktop\graph\projet\graphes\solver.h
+1768257645 c:\users\noahn\desktop\graph\projet\graphes\solver.h
 	"Maze.h"
 	"Node.h"
 	<vector>
@@ -33,22 +33,26 @@
 	<queue>
 	<stack>
 	<iostream>
+	<algorithm>
+	<map>
 
-1768203384 c:\users\noahn\desktop\graph\projet\graphes\node.h
+1768258048 c:\users\noahn\desktop\graph\projet\graphes\node.h
 	<vector>
 	<set>
 	<string>
 	<utility>
 	<functional>
 
-1767703476 source:c:\users\noahn\desktop\graph\projet\graphes\maze.cpp
+1768251487 source:c:\users\noahn\desktop\graph\projet\graphes\maze.cpp
 	"Maze.h"
 	"GraphicAllegro5.h"
 	<fstream>
 	<exception>
 
-1767535899 source:c:\users\noahn\desktop\graph\projet\graphes\solver.cpp
+1768257645 source:c:\users\noahn\desktop\graph\projet\graphes\solver.cpp
 	"Solver.h"
 	<algorithm>
 	<cmath>
+	<unordered_set>
+	<chrono>
 
