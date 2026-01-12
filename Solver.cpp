@@ -4,372 +4,393 @@
 #include <unordered_set>
 #include <chrono>
 
-Solver::Solver(const Maze& maze) {
-    m_maxRow = maze.getNbLines();
-    m_maxCol = maze.getNbCols();
-    m_startPlayer = maze.getPlayerPosition();
+Solver::Solver(const Maze& m) {
+    h_max = m.getNbLines();
+    w_max = m.getNbCols();
+    p_init = m.getPlayerPosition();
 
-    // Initialise la matrice de deadlocks du Solver
-    m_staticDeadlocks.assign(m_maxRow, std::vector<bool>(m_maxCol, false));
+    // init mat
+    dead.assign(h_max, std::vector<bool>(w_max, false));
 
-    for(unsigned int i=0; i<m_maxRow; ++i) {
-        for(unsigned int j=0; j<m_maxCol; ++j) {
-            if(maze.isWall({i, j})) {
-                m_walls.push_back({(int)i, (int)j});
+    for(unsigned int i=0; i<h_max; ++i) {
+        for(unsigned int j=0; j<w_max; ++j) {
+            if(m.isWall({i, j})) {
+                w.push_back({(int)i, (int)j});
             }
-            // Copie l'information de deadlock depuis le Maze
-            if(maze.isDeadlock({(int)i, (int)j})) {
-                m_staticDeadlocks[i][j] = true;
+            // copie du truc
+            if(m.isDeadlock({(int)i, (int)j})) {
+                dead[i][j] = true;
             }
         }
     }
-    auto goalsVec = maze.getGoals();
-    m_goals = goalsVec;
+    auto tmp = m.getGoals();
+    g = tmp;
 
-    auto boxesVec = maze.getBoxes();
-    m_startBoxes.insert(boxesVec.begin(), boxesVec.end());
+    auto b = m.getBoxes();
+    b_init.insert(b.begin(), b.end());
 }
 
-// Optimized isWall using the vector
-bool Solver::isWall(const std::pair<int, int>& pos) const {
-    for(const auto& w : m_walls) {
-        if(w == pos) return true;
+bool Solver::check_w(const std::pair<int, int>& pos) const {
+    for(const auto& x : w) {
+        if(x == pos) return true;
     }
     return false;
 }
 
-bool Solver::isGoal(const std::pair<int, int>& pos) const {
-    for(const auto& g : m_goals) {
-        if(g == pos) return true;
+bool Solver::check_g(const std::pair<int, int>& pos) const {
+    for(const auto& x : g) {
+        if(x == pos) return true;
     }
     return false;
 }
 
-std::vector<Node> Solver::expand(const Node& current) const {
-    std::vector<Node> successors;
+std::vector<Node> Solver::go(const Node& n) const {
+    std::vector<Node> res;
 
-    const std::vector<std::pair<int,int>> directions = {
+    // up down etc
+    const std::vector<std::pair<int,int>> d = {
         {-1, 0}, {1, 0}, {0, -1}, {0, 1}
     };
 
-    const char moveChars[] = {0, 1, 2, 3};
+    const char c[] = {0, 1, 2, 3};
 
     for(int i=0; i<4; ++i) {
-        std::pair<int, int> newPos = {
-            current.playerPos.first + directions[i].first,
-            current.playerPos.second + directions[i].second
+        std::pair<int, int> np = {
+            n.playerPos.first + d[i].first,
+            n.playerPos.second + d[i].second
         };
 
-        if(isWall(newPos)) continue;
+        if(check_w(np)) continue;
 
-        bool isPush = false;
-        if(current.boxes.count(newPos)) {
-            std::pair<int, int> newBoxPos = {
-                newPos.first + directions[i].first,
-                newPos.second + directions[i].second
+        bool push = false;
+        if(n.boxes.count(np)) {
+            std::pair<int, int> nbp = {
+                np.first + d[i].first,
+                np.second + d[i].second
             };
 
-            if(isWall(newBoxPos)) continue;
+            if(check_w(nbp)) continue;
+            if(n.boxes.count(nbp)) continue; // deja une caisse
+            if(dead[nbp.first][nbp.second]) continue; // coin
 
-            if(current.boxes.count(newBoxPos)) continue;
+            push = true;
 
-            if(m_staticDeadlocks[newBoxPos.first][newBoxPos.second]) continue;
+            Node nx = n;
+            nx.playerPos = np;
+            nx.boxes.erase(np);
+            nx.boxes.insert(nbp);
+            nx.path.push_back(c[i]);
+            nx.cost = n.cost + 1;
 
-            isPush = true;
-
-            Node nextNode = current;
-            nextNode.playerPos = newPos;
-            nextNode.boxes.erase(newPos);
-            nextNode.boxes.insert(newBoxPos);
-            nextNode.path.push_back(moveChars[i]);
-            nextNode.cost = current.cost + 1;
-
-            successors.push_back(nextNode);
+            res.push_back(nx);
 
         } else {
-            // Just move
-            Node nextNode = current;
-            nextNode.playerPos = newPos;
-            nextNode.path.push_back(moveChars[i]);
-            nextNode.cost = current.cost + 1;
-            successors.push_back(nextNode);
+            // bouge simple
+            Node nx = n;
+            nx.playerPos = np;
+            nx.path.push_back(c[i]);
+            nx.cost = n.cost + 1;
+            res.push_back(nx);
         }
     }
 
-    return successors;
+    return res;
 }
 
 std::vector<char> Solver::solveBFS() {
-    auto startTimer = std::chrono::high_resolution_clock::now();
-    std::queue<Node> openSet;
-    std::unordered_set<Node, NodeHash> visited;
+    auto t1 = std::chrono::high_resolution_clock::now();
+    std::queue<Node> q;
+    std::unordered_set<Node, NodeHash> vu;
 
-    Node startNode;
-    startNode.playerPos = m_startPlayer;
-    startNode.boxes = m_startBoxes;
+    Node s;
+    s.playerPos = p_init;
+    s.boxes = b_init;
 
-    openSet.push(startNode);
-    visited.insert(startNode);
+    q.push(s);
+    vu.insert(s);
 
-    int nodesExplored = 0;
+    int nb = 0;
 
-    while(!openSet.empty()) {
-        Node current = openSet.front();
-        openSet.pop();
-        nodesExplored++;
+    while(!q.empty()) {
+        Node curr = q.front();
+        q.pop();
+        nb++;
 
-        // Check goal
-        bool allOnGoal = true;
-        for(const auto& box : current.boxes) {
-            if(!isGoal(box)) {
-                allOnGoal = false;
+        // win ?
+        bool ok = true;
+        for(const auto& b : curr.boxes) {
+            if(!check_g(b)) {
+                ok = false;
                 break;
             }
         }
-        if(allOnGoal) {
-            auto endTimer = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> elapsed = endTimer - startTimer;
-            std::cout << "BFS Found solution! Length: " << current.path.size()
-                      << " Nodes explored: " << nodesExplored
-                      << " Time: " << elapsed.count() << "s" << std::endl;
-            std::vector<char> result(current.path.begin(), current.path.end());
-            return result;
+        if(ok) {
+            auto t2 = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> diff = t2 - t1;
+            std::cout << "BFS trouve : " << curr.path.size()
+                      << " noeuds: " << nb
+                      << " temps: " << diff.count() << "s" << std::endl;
+            std::vector<char> r(curr.path.begin(), curr.path.end());
+            return r;
         }
 
-        std::vector<Node> nextNodes = expand(current);
-        for(const auto& next : nextNodes) {
-            if(visited.find(next) == visited.end()) {
-                visited.insert(next);
-                openSet.push(next);
+        std::vector<Node> next = go(curr);
+        for(const auto& x : next) {
+            if(vu.find(x) == vu.end()) {
+                vu.insert(x);
+                q.push(x);
             }
         }
     }
 
-    auto endTimer = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = endTimer - startTimer;
-    std::cout << "BFS: No solution found. Time: " << elapsed.count() << "s" << std::endl;
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = t2 - t1;
+    std::cout << "BFS rate... " << diff.count() << "s" << std::endl;
     return {};
 }
 
 std::vector<char> Solver::solveDFS() {
-    auto startTimer = std::chrono::high_resolution_clock::now();
-    std::stack<Node> openSet;
-    std::unordered_set<Node, NodeHash> visited;
+    auto t1 = std::chrono::high_resolution_clock::now();
+    std::stack<Node> pile;
+    std::unordered_set<Node, NodeHash> vu;
 
-    Node startNode;
-    startNode.playerPos = m_startPlayer;
-    startNode.boxes = m_startBoxes;
+    Node s;
+    s.playerPos = p_init;
+    s.boxes = b_init;
 
-    openSet.push(startNode);
-    visited.insert(startNode);
+    pile.push(s);
+    vu.insert(s);
 
-    int nodesExplored = 0;
+    int nb = 0;
 
-    while(!openSet.empty()) {
-        Node current = openSet.top();
-        openSet.pop();
-        nodesExplored++;
+    while(!pile.empty()) {
+        Node curr = pile.top();
+        pile.pop();
+        nb++;
 
-         // Check goal
-        bool allOnGoal = true;
-        for(const auto& box : current.boxes) {
-            if(!isGoal(box)) {
-                allOnGoal = false;
+         // win ?
+        bool ok = true;
+        for(const auto& b : curr.boxes) {
+            if(!check_g(b)) {
+                ok = false;
                 break;
             }
         }
-        if(allOnGoal) {
-            auto endTimer = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> elapsed = endTimer - startTimer;
-            std::cout << "DFS Found solution! Length: " << current.path.size()
-                      << " Nodes explored: " << nodesExplored
-                      << " Time: " << elapsed.count() << "s" << std::endl;
-            std::vector<char> result(current.path.begin(), current.path.end());
-            return result;
+        if(ok) {
+            auto t2 = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> diff = t2 - t1;
+            std::cout << "DFS trouve : " << curr.path.size()
+                      << " noeuds: " << nb
+                      << " temps: " << diff.count() << "s" << std::endl;
+            std::vector<char> r(curr.path.begin(), curr.path.end());
+            return r;
         }
 
-        std::vector<Node> nextNodes = expand(current);
+        std::vector<Node> next = go(curr);
 
-        for(const auto& next : nextNodes) {
-            if(visited.find(next) == visited.end()) {
-                visited.insert(next);
-                openSet.push(next);
+        for(const auto& x : next) {
+            if(vu.find(x) == vu.end()) {
+                vu.insert(x);
+                pile.push(x);
             }
         }
     }
-    auto endTimer = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = endTimer - startTimer;
-    std::cout << "DFS: No solution found. Time: " << elapsed.count() << "s" << std::endl;
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = t2 - t1;
+    std::cout << "DFS rate... " << diff.count() << "s" << std::endl;
     return {};
 }
 
-int Solver::calculateHeuristic(const Node& node) const {
-    int h = 0;
-    for(const auto& box : node.boxes) {
-        int minDist = 999999;
-        for(const auto& goal : m_goals) {
-            int d = std::abs(box.first - goal.first) + std::abs(box.second - goal.second);
-            if(d < minDist) minDist = d;
+int Solver::calc_h(const Node& n) const {
+    int val = 0;
+    for(const auto& b : n.boxes) {
+        int min_d = 999999;
+        for(const auto& gl : g) {
+            int d = std::abs(b.first - gl.first) + std::abs(b.second - gl.second);
+            if(d < min_d) min_d = d;
         }
-        h += minDist;
+        val += min_d;
     }
-    return h;
+    return val;
 }
 
 std::vector<char> Solver::solveAStar() {
-    auto startTimer = std::chrono::high_resolution_clock::now();
-    std::priority_queue<Node, std::vector<Node>, NodeComparator> openSet;
-    std::unordered_set<Node, NodeHash> visited;
+    auto t1 = std::chrono::high_resolution_clock::now();
+    std::priority_queue<Node, std::vector<Node>, NodeComparator> q;
+    std::unordered_set<Node, NodeHash> vu;
 
-    Node startNode;
-    startNode.playerPos = m_startPlayer;
-    startNode.boxes = m_startBoxes;
-    startNode.heuristic = calculateHeuristic(startNode);
+    Node s;
+    s.playerPos = p_init;
+    s.boxes = b_init;
+    s.heuristic = calc_h(s); // h
 
-    openSet.push(startNode);
-    // Note: For A*, we should technically allow re-visiting if we find a cheaper path.
-    // But with consistent heuristic and unit steps, a closed set is usually fine for simple graph search
-    // UNLESS the heuristic is non-monotonic.
-    // Here we'll stick to a simple visited set for simplicity first.
-    visited.insert(startNode);
+    q.push(s);
+    vu.insert(s);
 
-    int nodesExplored = 0;
+    int nb = 0;
 
-    while(!openSet.empty()) {
-        Node current = openSet.top();
-        openSet.pop();
-        nodesExplored++;
+    while(!q.empty()) {
+        Node curr = q.top();
+        q.pop();
+        nb++;
 
-        // Check solution
-        bool allOnGoal = true;
-        for(const auto& box : current.boxes) {
-            if(!isGoal(box)) {
-                allOnGoal = false;
+        // win ?
+        bool ok = true;
+        for(const auto& b : curr.boxes) {
+            if(!check_g(b)) {
+                ok = false;
                 break;
             }
         }
-        if(allOnGoal) {
-            auto endTimer = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> elapsed = endTimer - startTimer;
-            std::cout << "A* Found solution! Length: " << current.path.size()
-                      << " Nodes explored: " << nodesExplored
-                      << " Time: " << elapsed.count() << "s" << std::endl;
-            std::vector<char> result(current.path.begin(), current.path.end());
-            return result;
+        if(ok) {
+            auto t2 = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> diff = t2 - t1;
+            std::cout << "A* trouve ! len: " << curr.path.size()
+                      << " noeuds: " << nb
+                      << " t: " << diff.count() << "s" << std::endl;
+            return std::vector<char>(curr.path.begin(), curr.path.end());
         }
 
-        std::vector<Node> nextNodes = expand(current);
-        for(auto& next : nextNodes) {
-            if(visited.find(next) == visited.end()) {
-                next.heuristic = calculateHeuristic(next);
-                visited.insert(next);
-                openSet.push(next);
+        std::vector<Node> next = go(curr);
+        for(auto& x : next) {
+             // check deadlock dyn pour le lvl 3
+            if (test_dl(x)) {
+                continue; // mort
+            }
+
+            if(vu.find(x) == vu.end()) {
+                x.heuristic = calc_h(x);
+                vu.insert(x);
+                q.push(x);
             }
         }
     }
-     auto endTimer = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = endTimer - startTimer;
-    std::cout << "A*: No solution found. Time: " << elapsed.count() << "s" << std::endl;
+     auto t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = t2 - t1;
+    std::cout << "A* rate... " << diff.count() << "s" << std::endl;
     return {};
+}
+
+// Fonction pour voir si c mort (carre de 2x2)
+bool Solver::test_dl(const Node& n) const {
+    for (const auto& b : n.boxes) {
+        if (check_g(b)) continue; // c bon
+
+        int r = b.first;
+        int c = b.second;
+
+        // check autour
+        auto chk = [&](int rr, int cc) { 
+             if (rr == r && cc == c) return true; // moi
+             if (check_w({rr, cc})) return true; // mur
+             if (n.boxes.count({rr, cc})) return true; // caisse
+             return false;
+        };
+
+        // les 4 carres
+        if (chk(r-1, c-1) && chk(r-1, c) && chk(r, c-1)) return true;
+        if (chk(r-1, c) && chk(r-1, c+1) && chk(r, c+1)) return true;
+        if (chk(r, c-1) && chk(r+1, c-1) && chk(r+1, c)) return true;
+        if (chk(r, c+1) && chk(r+1, c) && chk(r+1, c+1)) return true;
+    }
+    return false;
 }
 
 std::vector<char> Solver::solveBruteForce() {
-    auto startTimer = std::chrono::high_resolution_clock::now();
-    Node startNode;
-    startNode.playerPos = m_startPlayer;
-    startNode.boxes = m_startBoxes;
-    std::vector<char> solution;
+    auto t1 = std::chrono::high_resolution_clock::now();
+    Node s;
+    s.playerPos = p_init;
+    s.boxes = b_init;
+    std::vector<char> sol;
 
-    int maxDepth = 15;
-    std::cout << "Starting Brute Force (max depth: " << maxDepth << ")..." << std::endl;
+    int max = 15;
+    std::cout << "Brute Force (max " << max << ")..." << std::endl;
 
-    if (bruteForceRecursive(startNode, 0, maxDepth, solution)) {
-        auto endTimer = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = endTimer - startTimer;
-        std::cout << "Brute Force: Solution found! Time: " << elapsed.count() << "s" << std::endl;
-        return solution;
+    if (bf_rec(s, 0, max, sol)) {
+        auto t2 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> diff = t2 - t1;
+        std::cout << "BF trouve ! t: " << diff.count() << "s" << std::endl;
+        return sol;
     }
 
-    auto endTimer = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = endTimer - startTimer;
-    std::cout << "Brute Force: No solution found. Time: " << elapsed.count() << "s" << std::endl;
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = t2 - t1;
+    std::cout << "BF rate... " << diff.count() << "s" << std::endl;
     return {};
 }
 
-bool Solver::bruteForceRecursive(Node& current, int depth, int maxDepth, std::vector<char>& solution) {
-    // 1. Verification de la victoire
-    bool allOnGoal = true;
-    for(const auto& box : current.boxes) {
-        if(!isGoal(box)) { allOnGoal = false; break; }
+bool Solver::bf_rec(Node& cur, int p, int max, std::vector<char>& sol) {
+    // 1. win ?
+    bool ok = true;
+    for(const auto& b : cur.boxes) {
+        if(!check_g(b)) { ok = false; break; }
     }
-    if(allOnGoal) return true;
+    if(ok) return true;
 
-    // 2. Limite de profondeur (evite de boucler a l'infini)
-    if (depth >= maxDepth) return false;
+    // 2. prof max
+    if (p >= max) return false;
 
-    // 3. Expansion des successeurs
-    std::vector<Node> successors = expand(current);
+    // 3. suite
+    std::vector<Node> next = go(cur);
 
-    for (const auto& next : successors) {
-        // Ajouter le mouvement a la solution
-        solution.push_back(next.path.back());
-
-        Node temp = next; // Copie de l'etat actuel
-        if (bruteForceRecursive(temp, depth + 1, maxDepth, solution)) {
+    for (const auto& n : next) {
+        sol.push_back(n.path.back());
+        Node tmp = n; 
+        if (bf_rec(tmp, p + 1, max, sol)) {
             return true;
         }
-
-        // Backtracking : on retire le mouvement si ce chemin ne mene a rien
-        solution.pop_back();
+        // backtrack
+        sol.pop_back();
     }
 
     return false;
 }
 
 std::vector<char> Solver::solveBestFirst() {
-    auto startTimer = std::chrono::high_resolution_clock::now();
-    // Utilisation du comparateur base uniquement sur h(n)
-    std::priority_queue<Node, std::vector<Node>, GreedyNodeComparator> openSet;
-    std::unordered_set<Node, NodeHash> visited;
+    auto t1 = std::chrono::high_resolution_clock::now();
+    // greedy
+    std::priority_queue<Node, std::vector<Node>, GreedyNodeComparator> q;
+    std::unordered_set<Node, NodeHash> vu;
 
-    Node startNode;
-    startNode.playerPos = m_startPlayer;
-    startNode.boxes = m_startBoxes;
-    startNode.heuristic = calculateHeuristic(startNode);
+    Node s;
+    s.playerPos = p_init;
+    s.boxes = b_init;
+    s.heuristic = calc_h(s);
 
-    openSet.push(startNode);
-    visited.insert(startNode);
+    q.push(s);
+    vu.insert(s);
 
-    int nodesExplored = 0;
-    while(!openSet.empty()) {
-        Node current = openSet.top();
-        openSet.pop();
-        nodesExplored++;
+    int nb = 0;
+    while(!q.empty()) {
+        Node curr = q.top();
+        q.pop();
+        nb++;
 
-        // Verification de la victoire
-        bool allOnGoal = true;
-        for(const auto& box : current.boxes) {
-            if(!isGoal(box)) { allOnGoal = false; break; }
+        // win ?
+        bool ok = true;
+        for(const auto& b : curr.boxes) {
+            if(!check_g(b)) { ok = false; break; }
         }
-        if(allOnGoal) {
-            auto endTimer = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> elapsed = endTimer - startTimer;
-            std::cout << "Greedy Found solution! Length: " << current.path.size()
-                      << " Nodes explored: " << nodesExplored
-                      << " Time: " << elapsed.count() << "s" << std::endl;
-            return std::vector<char>(current.path.begin(), current.path.end());
+        if(ok) {
+            auto t2 = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> diff = t2 - t1;
+            std::cout << "Greedy trouve ! len: " << curr.path.size()
+                      << " noeuds: " << nb
+                      << " t: " << diff.count() << "s" << std::endl;
+            return std::vector<char>(curr.path.begin(), curr.path.end());
         }
 
-        for(auto& next : expand(current)) {
-            if(visited.find(next) == visited.end()) {
-                next.heuristic = calculateHeuristic(next);
-                visited.insert(next);
-                openSet.push(next);
+        std::vector<Node> tmp = go(curr);
+        for(auto& x : tmp) {
+            if(vu.find(x) == vu.end()) {
+                x.heuristic = calc_h(x);
+                vu.insert(x);
+                q.push(x);
             }
         }
     }
-    auto endTimer = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = endTimer - startTimer;
-    std::cout << "Greedy: No solution found. Time: " << elapsed.count() << "s" << std::endl;
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = t2 - t1;
+    std::cout << "Greedy rate... t: " << diff.count() << "s" << std::endl;
     return {};
 }

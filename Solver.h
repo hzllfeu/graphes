@@ -9,45 +9,47 @@
 #include <queue>
 #include <stack>
 #include <iostream>
+#include <algorithm>
+#include <map>
+
 
 class Solver {
 public:
-    Solver(const Maze& maze);
+    Solver(const Maze& m);
 
-    // Level 1: Blind Algorithms
+    // algos
     std::vector<char> solveBruteForce();
     std::vector<char> solveBFS();
     std::vector<char> solveDFS();
 
-    // Level 2: Heuristic Algorithms
     std::vector<char> solveAStar();
     std::vector<char> solveBestFirst();
 
+    // check deadlock dyn
+    bool test_dl(const Node& n) const;
+
 private:
-    // Static map data (constant throughout the search)
-    std::vector<std::pair<int, int>> m_walls;
-    std::vector<std::pair<int, int>> m_goals;
-    int m_maxRow;
-    int m_maxCol;
+    std::vector<std::pair<int, int>> w; // murs
+    std::vector<std::pair<int, int>> g; // goals
+    int h_max;
+    int w_max;
 
-    // Initial state
-    std::pair<int, int> m_startPlayer;
-    std::set<std::pair<int, int>> m_startBoxes;
+    std::pair<int, int> p_init;
+    std::set<std::pair<int, int>> b_init;
 
-    // Helpers
-    bool isWall(const std::pair<int, int>& pos) const;
-    bool isGoal(const std::pair<int, int>& pos) const;
-    bool isDeadlock(const std::set<std::pair<int, int>>& boxes) const;
+    // helpers
+    bool check_w(const std::pair<int, int>& pos) const;
+    bool check_g(const std::pair<int, int>& pos) const;
+    
+    // pour avoir les successeurs
+    std::vector<Node> go(const Node& n) const;
 
-    // Expansion
-    std::vector<Node> expand(const Node& current) const;
+    // heuristique
+    int calc_h(const Node& n) const;
 
-    // Heuristic
-    int calculateHeuristic(const Node& node) const;
+    std::vector<std::vector<bool>> dead;
 
-    std::vector<std::vector<bool>> m_staticDeadlocks;
-
-    bool bruteForceRecursive(Node& current, int depth, int maxDepth, std::vector<char>& solution);
+    bool bf_rec(Node& cur, int prof, int max_prof, std::vector<char>& sol);
 };
 
 #endif // SOLVER_H
