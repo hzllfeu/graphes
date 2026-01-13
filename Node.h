@@ -17,7 +17,7 @@ struct pair_hash {
 
 struct Node {
     std::pair<int, int> playerPos;
-    std::set<std::pair<int, int>> boxes; // On garde le set pour pas que ça bug
+    std::set<std::pair<int, int>> boxes; // On garde le set pour pas que ï¿½a bug
     std::string path;
 
     // g(n) et h(n)
@@ -34,22 +34,27 @@ struct Node {
         return boxes < other.boxes;
     }
 
-    // Pour tester l'égalité
+    // Pour tester l'ï¿½galitï¿½
     bool operator==(const Node& other) const {
         return playerPos == other.playerPos && boxes == other.boxes;
     }
 };
 
-// Hash
 struct NodeHash {
     std::size_t operator()(const Node& n) const {
-        std::size_t h = 0;
-        // On combine le joueur et les boites
-        h ^= pair_hash{}(n.playerPos) + 0x9e3779b9;
-        for(auto const& b : n.boxes) {
-            h ^= pair_hash{}(b) + 0x9e3779b9;
+        std::size_t seed = 0;
+
+        // 1. Hacher la position du joueur (avec la formule robuste)
+        auto hPlayer = pair_hash{}(n.playerPos);
+        seed ^= hPlayer + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+        // 2. Hacher les boites
+        for(const auto& box : n.boxes) {
+            auto hBox = pair_hash{}(box);
+            // C'est cette ligne qui fait toute la diffÃ©rence :
+            seed ^= hBox + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         }
-        return h;
+        return seed;
     }
 };
 
